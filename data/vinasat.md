@@ -1,0 +1,7 @@
+Vinasat is the national satellite program of Vietnam, aimed at facilitating telecommunications links within the country. It consists of several satellites, with Vinasat-1 and Vinasat-2 being two prominent ones.
+
+Vinasat-1 was launched on April 18, 2008, and was built by Lockheed Martin for Vietnam Posts and Telecommunications Group (VNPT). It is based on Lockheed Martin's A2100A spacecraft platform and features 12 operating Ku Band transponders providing coverage over Vietnam, Laos, Cambodia, Thailand, and part of Myanmar. The spacecraft also features 8 C-Band primary transponders providing coverage over Vietnam, Cambodia, Laos, Southeast Asia, India, Japan, and Australia. It is designed for a minimum service life of 15 years and will be located at orbital slot 132 degrees east.
+
+Vinasat-2 was launched on May 15, 2012, and like Vinasat-1, it was also built by Lockheed Martin. The satellite costs about US$280 million and weighs 3,000 kilograms. It will be able to provide capacity equal to 13,000 channels of telephone/internet/data communications or 150 Television channels; a greater number of sensor responses; and higher bandwidth capacity 2.
+
+The goal of these satellites is to enhance the nation's communication networks infrastructure, remove dependence on ground networks, and allow 100% of Vietnam’s rural communities to be equipped with telephones and televisions. They also aim to provide communication for fishermen at sea, deliver weather forecasts, and ensure defense security
