@@ -10,6 +10,27 @@ use text_splitter::TextSplitter;
 use tokenizers::tokenizer::Tokenizer;
 use tokio_stream::StreamExt;
 
+#[derive(Serialize, Clone)]
+enum Role {
+    User,
+    Assistant,
+}
+
+impl Role {
+    fn as_str(&self) -> &str {
+        match self {
+            Role::User => "user",
+            Role::Assistant => "assistant",
+        }
+    }
+}
+
+#[derive(Serialize, Clone)]
+struct ChatMessage {
+    role: Role,
+    content: String,
+}
+
 type Embedding = Vec<f64>;
 
 fn cosine_similarity(a: &Vec<f64>, b: &Vec<f64>) -> f64 {
@@ -91,33 +112,30 @@ impl OllamaClient {
         &self,
         input: &str,
         context: &[SimilarDocument],
+        previous_messages: &[ChatMessage],
     ) -> Result<String, ErrorMessage> {
         let prompt = format!(
-            "Based on the following context, answer the user's question.\n\nContext: {provided_context}\n\nQuestion: {input}",
+            "Based on the following context and this conversation, answer my next question.\n\nContext: {provided_context}\n\nQuestion: {input}",
             provided_context = context.iter().map(|doc| format!("File: {}\n```\n{}\n```", doc.source, doc.content)).collect::<Vec<String>>().join("\n\n")
         );
+        let messages = [previous_messages, &[ChatMessage {
+            role: Role::User,
+            content: prompt,
+        }]].concat();
         let resp = self
             .client
             .post(format!("{OLLAMA_API_BASE}/chat"))
             .json(&serde_json::json!({
                 "model": "mistral",
                 "stream": true,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": input
-                    }
-                ]
+                "messages": messages
             }))
             .send()
             .await?;
 
         print!("\x1b[1mAnswer:\x1b[0m");
         let mut body = resp.bytes_stream();
+        let mut full_answer = String::new();
         while let Some(chunk) = body.next().await {
             let chunk = chunk.unwrap();
             let response: Result<OllamaChatResponse, serde_json::Error> =
@@ -125,13 +143,14 @@ impl OllamaClient {
             match response {
                 Ok(data) => {
                     print!("{}", data.message.content);
+                    full_answer.push_str(&data.message.content);
                     _ = stdout().flush();
                 }
                 _ => {}
             }
         }
         println!("");
-        Ok("".to_string())
+        Ok(full_answer)
     }
 }
 
@@ -256,6 +275,7 @@ async fn main() -> Result<(), ErrorMessage> {
     println!("Database initialized!\nNow you can ask me anything!\n\n");
 
     let mut is_running = true;
+    let mut previous_messages: Vec<ChatMessage> = vec![];
 
     while is_running {
         print!("\x1b[1mQuestion:\x1b[0m ");
@@ -274,7 +294,15 @@ async fn main() -> Result<(), ErrorMessage> {
 
         if let Ok(matching) = database.similarity_search(question).await {
             println!("> Found {} records.", matching.len());
-            _ = api_client.get_answer(question, &matching).await;
+            let answer = api_client.get_answer(question, &matching, &previous_messages).await?;
+            previous_messages.push(ChatMessage {
+                role: Role::User,
+                content: question.to_string(),
+            });
+            previous_messages.push(ChatMessage {
+                role: Role::Assistant,
+                content: answer,
+            });
         }
     }
 
